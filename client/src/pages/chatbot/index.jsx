@@ -101,7 +101,7 @@ const Chatbot = () => {
           {messages.map((message, index) => (
             <div
               key={index}
-              className={`mb-4 flex ${
+              className={`mb-2 flex ${
                 message.sender === "User" ? "justify-end" : "justify-start"
               }`}
             >
