@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 
 const schema = z.object({
   name: z.string().max(50),
   age: z
     .string()
-    .min(1)
+    .min(1, { message: "Minimun age is 1" })
     .refine((val) => Number(val) < 120, { message: "Unrealistic Age" }),
   gender: z.string(),
   contact: z
@@ -20,9 +21,15 @@ const schema = z.object({
       }
     ),
   email: z.string().email(),
+  password: z.string().min(8, { message: "Minimum length should be 8" }),
 });
 
 const PatientForm = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev)
+  }
+
   const {
     register,
     handleSubmit,
@@ -30,6 +37,7 @@ const PatientForm = () => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: "onChange",
   });
 
   const onSubmit = (data) => {
@@ -39,7 +47,7 @@ const PatientForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-violet-100 to-violet-300 p-4">
-      <div className="bg-white shadow-lg rounded-md w-full max-w-md p-10 ">
+      <div className="bg-white shadow-lg rounded-md w-full max-w-lg p-12 ">
         <h2 className="text-2xl font-bold text-violet-600 text-center mb-6">
           Patient Profile
         </h2>
@@ -112,6 +120,22 @@ const PatientForm = () => {
             {errors.email && (
               <div className="text-red-500 text-sm">{errors.email.message}</div>
             )}
+          </div>
+
+          <div className="relative">
+            <input
+              {...register("password")}
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className="w-full px-4 py-2 mb-4 text-zinc-600 border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
+            />
+            <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-2.5 text-zinc-500 focus:outline-none">
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
           </div>
 
           <div>

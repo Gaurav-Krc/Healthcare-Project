@@ -6,9 +6,13 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import os
-
+import joblib
+from auth import auth_blueprint
 app = Flask(__name__)
 CORS(app)
+
+# Register the auth blueprint
+app.register_blueprint(auth_blueprint)
 
 db_config = {
     "host": "localhost",
@@ -21,8 +25,64 @@ connection_pool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=5, *
 
 df = pd.read_excel('symptom_diagnosis_data.xlsx')
 
-# Global list to store symptoms
+# Global variables
 symptom_storage = []
+current_emp_id = None
+
+def load_model(disease_name):
+    model_path = os.path.join('models', f"{disease_name}_model")
+    if os.path.exists(model_path):
+        return joblib.load(model_path)
+    else:
+        raise FileNotFoundError(f"Model for {disease_name} not found in 'models' directory.")
+
+def predict_disease_probability(disease_name, patient_data):
+    features = []
+    model = load_model(disease_name)
+    if disease_name == 'diabetes':
+        features = [
+            patient_data['age'], patient_data['bmi'], patient_data['blood_pressure'],
+            patient_data['glucose'], patient_data['insulin'], patient_data['skin_thickness'],
+            patient_data['diabetes_pedigree_function'], patient_data['pregnancies']
+        ]
+    elif disease_name == 'hypertension':
+        features = [
+            patient_data['age'], patient_data['bmi'], patient_data['blood_pressure'],
+            patient_data['glucose'], patient_data['insulin'], patient_data['skin_thickness'],
+            patient_data['diabetes_pedigree_function'], patient_data['pregnancies'],
+            patient_data['cholesterol'], patient_data['heart_rate']
+        ]
+    elif disease_name == 'heart_disease':
+        features = [
+            patient_data['age'], patient_data['bmi'], patient_data['blood_pressure'],
+            patient_data['glucose'], patient_data['insulin'], patient_data['skin_thickness'],
+            patient_data['diabetes_pedigree_function'], patient_data['pregnancies'],
+            patient_data['cholesterol'], patient_data['heart_rate']
+        ]
+    probability = model.predict_proba([features])[0][1]
+    return probability
+
+def interpret_probability(probability):
+    if probability > 0.8:
+        return "severe"
+    elif probability > 0.5:
+        return "moderate"
+    else:
+        return "mild or no"
+
+def handle_disease_prediction(disease_name, user_input):
+    emp_id = extract_emp_id(user_input)
+    if not emp_id:
+        return "You have not provided the patient's ID. Please try again!"
+
+    patient_details = get_patient_details(emp_id)
+    if not patient_details:
+        return f"No details found for ID {emp_id}. Please try again with a valid ID."
+
+    probability = predict_disease_probability(disease_name, patient_details)
+    condition = interpret_probability(probability)
+    return f"The patient has a {condition} risk of {disease_name.replace('_', ' ')} (probability: {probability:.2f})."
+
 
 def get_symptom_list():
     connection = connection_pool.get_connection()
@@ -43,24 +103,6 @@ def match_symptoms(user_input, symptom_list):
     return matched_symptoms
 
 
-# nlp = spacy.load("en_core_web_md")
-
-# def match_symptoms(user_input, symptom_list):
-#     # Preprocess and vectorize the user input
-#     user_vector = nlp(user_input).vector
-
-#     # Preprocess and vectorize each symptom in the list
-#     symptom_vectors = [nlp(symptom).vector for symptom in symptom_list]
-
-#     # Compute cosine similarity between user input and each symptom vector
-#     similarities = cosine_similarity([user_vector], symptom_vectors).flatten()
-
-#     # Filter symptoms with similarity > threshold (e.g., 0.5)
-#     matched_symptoms = [
-#         symptom_list[i] for i in range(len(symptom_list)) if similarities[i] > 0.5
-#     ]
-#     return matched_symptoms
-
 def identify_disease(matched_symptoms):
     for symptom in matched_symptoms:
         if symptom in df.columns: continue
@@ -74,15 +116,15 @@ def identify_disease(matched_symptoms):
     return diagnosis['diagnosis'].tolist()
 
 
-def count_diabetes_patients():
-    connection = connection_pool.get_connection()
-    cursor = connection.cursor()
-    try:
-        cursor.execute("SELECT COUNT(*) FROM diabetes_data WHERE diabetes = 1")
-        return cursor.fetchone()[0]
-    finally:
-        cursor.close()
-        connection.close()
+# def count_diabetes_patients():
+#     connection = connection_pool.get_connection()
+#     cursor = connection.cursor()
+#     try:
+#         cursor.execute("SELECT COUNT(*) FROM diabetes_data WHERE diabetes = 1")
+#         return cursor.fetchone()[0]
+#     finally:
+#         cursor.close()
+#         connection.close()
 
 
 def count_patients(condition=None):
@@ -98,6 +140,7 @@ def count_patients(condition=None):
     finally:
         cursor.close()
         connection.close()
+
 
 def get_patient_details(emp_id):
     connection = connection_pool.get_connection()
@@ -118,16 +161,19 @@ def get_patient_details(emp_id):
 
 
 def extract_emp_id(user_input):
+    global current_emp_id
     words = user_input.split()
     for word in words:
         if word.isdigit():
-            return word
-    return None
+            current_emp_id = word
+            return current_emp_id
+    return current_emp_id
 
 
 @app.route('/chat', methods=['POST'])
 def chat():
     global symptom_storage
+    global current_emp_id
 
     data = request.json
     user_input = data.get('input', '').strip().lower()
@@ -152,31 +198,34 @@ def chat():
         else:
             return jsonify({'output': "I couldn't understand your count query. Please specify the condition."})
 
-    # Check for "patient details" query
     emp_id = extract_emp_id(user_input)
-    if any(word in user_input for word in ["details", emp_id]):
+
+    # Disease Prediction Flow
+    if "check" in user_input:
+        if "diabetes" in user_input:
+            return jsonify({'output': handle_disease_prediction('diabetes', user_input)})
+
+        if "hypertension" in user_input:
+            return jsonify({'output': handle_disease_prediction('hypertension', user_input)})
+
+        if "heart disease" in user_input:
+            return jsonify({'output': handle_disease_prediction('heart_disease', user_input)})
+
+
+    if "details" in user_input or (emp_id is not None and emp_id in user_input):
         if emp_id:
             patient_details = get_patient_details(emp_id)
-            if patient_details:
-                diseases = []
-                if patient_details['diabetes']:     diseases.append("diabetes")
-                if patient_details['hypertension']:     diseases.append("hypertension")
-                if patient_details['heart_disease']:    diseases.append("heart disease")
-                
+            if patient_details:           
                 # Format details and diseases
                 details = ", ".join([f"{key}: {value}" for key, value in patient_details.items() 
                                      if key not in ['diabetes', 'hypertension', 'heart_disease']])
-                disease_info = " and ".join(diseases) if diseases else "no specific diseases"
-
                 return jsonify({
                     'output': f"Details for patient ID {emp_id} --> {details}. "
-                              f"This patient has {disease_info}."
                 })
             else:
                 return jsonify({'output': f"No details found for patient ID {emp_id}. Please try again with a valid ID."})
         else:
             return jsonify({'output': "Please provide the patient's ID."})
-
 
     if user_input == 'no':
         if not symptom_storage:
@@ -189,7 +238,7 @@ def chat():
         else:
             return jsonify({'output': "I couldn't match your symptoms to any diseases. Please consult a doctor."})
 
-    elif user_selected_symptom:
+    if user_selected_symptom:
         symptom_storage.append(user_selected_symptom)
         return jsonify({
             'output': f"You selected '{user_selected_symptom}'. Do you want to add more symptoms?"
@@ -212,3 +261,5 @@ def chat():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+ 
