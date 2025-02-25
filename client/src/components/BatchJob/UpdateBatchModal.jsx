@@ -1,29 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { Modal } from "antd";
 import { useForm } from "react-hook-form";
 
-const UpdateBatchJob = () => {
-  const [batchList, setBatchList] = useState([]);
+const UpdateBatchModal = ({ open, setOpen, batchId }) => {
+  const { register, handleSubmit, setValue } = useForm();
 
-  const { register, handleSubmit, reset, setValue } = useForm();
-
-  // When mode is "edit", fetch list of batches from the backend
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:8080/api/batch/all");
-        const data = await res.json();
-        setBatchList(data);
-      } catch (err) {
-        console.error("Error fetching batches:", err);
-      }
-    };
-
-    reset();
-    fetchBatches();
-  }, []);
-
-  // Fetch details for the selected batch and auto-fill form fields
-  const fetchBatchDetails = async (batchId) => {
+  const fetchBatches = async () => {
     try {
       const res = await fetch(`http://127.0.0.1:8080/api/batch/${batchId}`);
       const data = await res.json();
@@ -37,9 +19,14 @@ const UpdateBatchJob = () => {
     }
   };
 
+  useEffect(() => {
+    if (!batchId) return;
+    fetchBatches();
+  }, [batchId]);
+
   const onSubmit = async (data) => {
     try {
-      const res = await fetch("http://127.0.0.1:8080/api/batch/update", {
+      const res = await fetch(`http://127.0.0.1:8080/api/batch/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -47,8 +34,7 @@ const UpdateBatchJob = () => {
 
       const responseData = await res.json();
       alert(responseData.message);
-
-      reset();
+      setOpen(false);
     } catch (err) {
       console.error("Error submitting batch job:", err);
       alert("An error occurred. Please try again.");
@@ -56,8 +42,24 @@ const UpdateBatchJob = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-violet-100 to-violet-300 p-4">
-      <div className="bg-white shadow-lg rounded-md w-full max-w-2xl p-10">
+    <Modal
+      centered
+      open={open}
+      onCancel={() => {
+        setOpen(false);
+      }}
+      width={{
+        xs: "90%",
+        sm: "80%",
+        md: "70%",
+        lg: "60%",
+        xl: "50%",
+        xxl: "40%",
+      }}
+      className="bg-white max-w-2xl"
+      footer
+    >
+      <>
         <h1 className="mb-6 text-2xl font-bold text-violet-600 text-center">
           Update Batch Job
         </h1>
@@ -90,9 +92,8 @@ const UpdateBatchJob = () => {
               required
             >
               <option value="">Select Status</option>
-              <option value="active">Active</option>
-              <option value="onIce">On Ice</option>
-              <option value="disabled">Disabled</option>
+              <option value="ACTIVE">Active</option>
+              <option value="ON_ICE">On Ice</option>
             </select>
             <input
               {...register("executionMethod")}
@@ -104,13 +105,12 @@ const UpdateBatchJob = () => {
               type="submit"
               className="w-full p-2 bg-violet-600 text-white rounded hover:bg-violet-700 transition-colors"
             >
-              Submit
+              Update
             </button>
           </form>
         </div>
-      </div>
-    </div>
+      </>
+    </Modal>
   );
 };
-
-export default UpdateBatchJob;
+export default UpdateBatchModal;

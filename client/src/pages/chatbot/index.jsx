@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import MatchedSymptoms from "../../components/MatchedSymptoms";
+import MatchedSymptoms from "../../components/Chatbot/MatchedSymptoms";
 import { Send } from "lucide-react";
 import { Bot } from "lucide-react";
 import { CircleUserRound } from "lucide-react";

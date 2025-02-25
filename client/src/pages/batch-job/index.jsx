@@ -1,225 +1,41 @@
-// import React, { useState, useEffect } from "react";
-// import { useForm } from "react-hook-form";
-// import BatchHistoryDrawer from "../../components/BatchHistoryDrawer";
-
-// const BatchJob = () => {
-//   const [mode, setMode] = useState("create");
-//   const [batchList, setBatchList] = useState([]);
-//   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
-//   // History data state; in production, fetch from backend.
-//   const [historyData, setHistoryData] = useState({
-//     batchName: "",
-//     lastRunTime: "",
-//     timeTaken: "",
-//     finishTime: "",
-//     lastRunStatus: "",
-//     lastRunLog: ""
-//   });
-//   const { register, handleSubmit, reset, setValue } = useForm();
-
-//   // When mode is "edit", fetch list of batches from the backend
-//   useEffect(() => {
-//     const fetchBatches = async () => {
-//       if (mode === "edit") {
-//         try {
-//           const res = await fetch("http://127.0.0.1:8080/api/batch/all");
-//           const data = await res.json();
-//           setBatchList(data);
-//         } catch (err) {
-//           console.error("Error fetching batches:", err);
-//         }
-//       }
-//     };
-//     reset();
-//     fetchBatches();
-//   }, [mode]);
-
-//   // Fetch details for the selected batch and auto-fill form fields
-//   const fetchBatchDetails = async (batchId) => {
-//       try {
-//         const res = await fetch(`http://127.0.0.1:8080/api/batch/${batchId}`);
-//         const data = await res.json();
-//         setValue("batchName", data.batchName);
-//         setValue("batchId", data.batchId);
-//         setValue("cronExpression", data.cronExpression);
-//         setValue("status", data.status);
-//         setValue("executionMethod", data.executionMethod);
-//                 // set history data; replace with real data from backend as needed
-//         // setHistoryData({
-//         //   batchName: data.batchName,
-//         //   lastRunTime: data.lastRunTime || "2025-01-01 10:00 AM",
-//         //   timeTaken: data.timeTaken || "2 mins",
-//         //   finishTime: data.finishTime || "2025-01-01 10:02 AM",
-//         //   lastRunStatus: data.lastRunStatus || "Success",
-//         //   lastRunLog: data.lastRunLog || "No errors found."
-//         // });
-//       } catch (err) {
-//         console.error("Error fetching batch details:", err);
-//       }
-//   };
-
-//   const onSubmit = async (data) => {
-//     const url =
-//       mode === "create"
-//         ? "http://127.0.0.1:8080/api/batch/create"
-//         : "http://127.0.0.1:8080/api/batch/update";
-
-//         try {
-//           const res = await fetch(url, {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify(data),
-//           });
-
-//           const responseData = await res.json();
-//           alert(responseData.message);
-
-//           reset();
-//         } catch (err) {
-//           console.error("Error submitting batch job:", err);
-//           alert("An error occurred. Please try again.");
-//         }
-//   };
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-violet-100 to-violet-300 p-4">
-//       <div className="bg-white shadow-lg rounded-md w-full max-w-4xl p-6">
-//         <div className="flex justify-between items-center mb-6">
-//           <h1 className="text-2xl font-bold text-violet-600 text-center">Batch Job</h1>
-//           <button
-//             onClick={() => setShowHistoryDrawer(true)}
-//             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-//           >
-//             View History
-//           </button>
-//         </div>
-//         <div className="flex flex-col lg:flex-row gap-6">
-//           {/* Left Panel: Mode Selection & Batch Selection (Edit Mode) */}
-//           <div className="flex-1">
-//             <select
-//               onChange={(e) => setMode(e.target.value)}
-//               className="w-full px-4 py-2 mb-4 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//               defaultValue={mode}
-//             >
-//               <option value="create">Create New Batch Job</option>
-//               <option value="edit">Edit Batch Job</option>
-//             </select>
-//             {mode === "edit" && (
-//               <select
-//                 onChange={(e) => fetchBatchDetails(e.target.value)}
-//                 className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//               >
-//                 <option value="">Select a Batch Job</option>
-//                 {batchList.map((batch) => (
-//                   <option key={batch.batchId} value={batch.batchId}>
-//                     {batch.batchName} ({batch.batchId})
-//                   </option>
-//                 ))}
-//               </select>
-//             )}
-//           </div>
-//           {/* Right Panel: Form */}
-//           <div className="flex-1">
-//             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-//               {mode === "edit" ? (
-//                 <>
-//                   <input
-//                     {...register("batchName")}
-//                     placeholder="Batch Name"
-//                     className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//                     required
-//                   />
-//                   <input
-//                     {...register("batchId")}
-//                     placeholder="Batch ID"
-//                     className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none bg-gray-100"
-//                     disabled
-//                     required
-//                   />
-//                 </>
-//               ) : (
-//                 <>
-//                   <input
-//                     {...register("batchName")}
-//                     placeholder="Batch Name"
-//                     className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//                     required
-//                   />
-//                   <input
-//                     {...register("batchId")}
-//                     placeholder="Batch ID"
-//                     className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//                     required
-//                   />
-//                 </>
-//               )}
-//               <input
-//                 {...register("cronExpression")}
-//                 placeholder="Cron Expression"
-//                 className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//                 required
-//               />
-//               <select
-//                 {...register("status")}
-//                 className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//                 required
-//               >
-//                 <option value="">Select Status</option>
-//                 <option value="active">Active</option>
-//                 <option value="onIce">On Ice</option>
-//                 <option value="disabled">Disabled</option>
-//               </select>
-//               <input
-//                 {...register("executionMethod")}
-//                 placeholder="Execution Method"
-//                 className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-//                 required
-//               />
-//               <button
-//                 type="submit"
-//                 className="w-full p-2 bg-violet-600 text-white rounded hover:bg-violet-700 transition-colors"
-//               >
-//                 Submit
-//               </button>
-//             </form>
-//           </div>
-//         </div>
-//       </div>
-//       <BatchHistoryDrawer
-//         open={showHistoryDrawer}
-//         onClose={() => setShowHistoryDrawer(false)}
-//         historyData={historyData}
-//       />
-//     </div>
-//   );
-// };
-
-// export default BatchJob;
-
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space } from "antd";
-import { EditOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import BatchHistoryDrawer from "../../components/BatchHistoryDrawer";
+import { Table, Button, Space, Popconfirm } from "antd";
+import {
+  SyncOutlined,
+  EditOutlined,
+  HistoryOutlined,
+  PlusOutlined,
+  VerticalLeftOutlined,
+  StopOutlined,
+} from "@ant-design/icons";
+import BatchHistoryDrawer from "../../components/BatchJob/BatchHistoryDrawer";
+import CreateBatchModal from "../../components/BatchJob/CreateBatchModal";
+import UpdateBatchModal from "../../components/BatchJob/UpdateBatchModal";
 
 const BatchJobTable = () => {
   const [batchList, setBatchList] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [openDrawer, setOpenDrawer] = useState(false);
   const [historyBatchName, setHistoryBatchName] = useState("");
-
-  const navigate = useNavigate();
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openUpdateModal, setOpenUpdateModal] = useState(false);
+  const [batchIdForUpdate, setBatchIdForUpdate] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Fetch all batches from the backend
+  const fetchBatches = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://127.0.0.1:8080/api/batch/all");
+      const data = await res.json();
+      setBatchList(data);
+    } catch (err) {
+      console.error("Error fetching batches:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:8080/api/batch/all");
-        const data = await res.json();
-        setBatchList(data);
-      } catch (err) {
-        console.error("Error fetching batches:", err);
-      }
-    };
     fetchBatches();
   }, []);
 
@@ -257,75 +73,150 @@ const BatchJobTable = () => {
       render: (createdAt) => new Date(createdAt).toLocaleString(),
     },
     {
+      title: "Last Updated",
+      dataIndex: "lastUpdated",
+      key: "lastUpdated",
+      render: (lastUpdated) =>
+        lastUpdated ? new Date(lastUpdated).toLocaleString() : "N/A",
+    },
+    {
+      title: "Latest Execution Status",
+      dataIndex: "latestExecutionStatus",
+      key: "latestExecutionStatus",
+      render: (latestExecutionStatus) => latestExecutionStatus || "N/A",
+    },
+    {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
           <Button
-            icon={<EyeOutlined />}
-            onClick={() => showDrawer(record.batchName)}
-            className="bg-gray-500 text-white rounded hover:bg-gray-700 transition-colors"
-          >
-            View History
-          </Button>
-
-          <Button
             icon={<EditOutlined />}
             onClick={() => handleEdit(record.batchId)}
+          />
+
+          <Popconfirm
+            title="Start Job"
+            description="Are you sure you want to start this job?"
+            onConfirm={() => handleStartBatch(record.batchId)}
           >
-            Edit
-          </Button>
+            <Button
+              icon={<VerticalLeftOutlined />}
+              className="bg-green-500 text-white rounded hover:bg-green-700 transition-colors"
+            />
+          </Popconfirm>
+
+          <Popconfirm
+            title="Stop Job"
+            description="Are you sure you want to stop this job?"
+            onConfirm={() => handleStopBatch(record.batchId)}
+          >
+            <Button
+              icon={<StopOutlined />}
+              className="bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+            />
+          </Popconfirm>
+
+          <Button
+            icon={<HistoryOutlined />}
+            onClick={() => showDrawer(record.batchName)}
+            className="bg-gray-500 text-white rounded hover:bg-gray-700 transition-colors"
+          />
         </Space>
       ),
     },
   ];
 
   const showDrawer = (batchName) => {
-    setOpen(true);
-    setHistoryBatchId(batchName);
+    setOpenDrawer(true);
+    setHistoryBatchName(batchName);
   };
 
   const onClose = () => {
-    setOpen(false);
-    setHistoryBatchId("");
+    setOpenDrawer(false);
+    setHistoryBatchName("");
   };
 
-  // Handle Edit
   const handleEdit = (batchId) => {
-    navigate(`/batch/update/${batchId}`);
+    setOpenUpdateModal(true);
+    setBatchIdForUpdate(batchId);
   };
 
-  // Handle Create New Batch Job
-  const handleCreate = () => {
-    navigate("/batch/new"); // Redirect to the create page
+  const handleStartBatch = async (batchId) => {
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8080/api/batch/${batchId}/start`,
+        {
+          method: "POST",
+        }
+      );
+      const data = await res.json();
+      alert(data.message);
+    } catch (err) {
+      console.error("Error starting job:", err);
+      alert("Failed to stop job");
+    }
+  };
+
+  const handleStopBatch = async (batchId) => {
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8080/api/batch/${batchId}/stop`,
+        {
+          method: "POST",
+        }
+      );
+      const data = await res.json();
+      alert(data.message);
+    } catch (err) {
+      console.error("Error stopping job:", err);
+      alert("Failed to stop job");
+    }
   };
 
   return (
     <div className="min-h-screen flex justify-center items-start bg-gradient-to-r from-violet-100 to-violet-300 p-4">
       <div className="bg-white shadow-lg rounded-md w-full max-w-screen-2xl mt-12 p-4">
         <div className="p-6">
-        
-          <Button
-            icon={<PlusOutlined />}
-            onClick={handleCreate}
-            className="mb-4 bg-violet-600 text-white rounded hover:bg-violet-700 transition-colors"
-          >
-            Create New Batch Job
-          </Button>
+          <Space className="mb-4">
+            <Button
+              icon={<PlusOutlined />}
+              onClick={() => setOpenCreateModal(true)}
+              className="bg-violet-600 text-white rounded hover:bg-violet-700 transition-colors"
+            />
 
-          <Table
-            dataSource={batchList}
-            columns={columns}
-            rowKey="batchId"
-            bordered
-            pagination={{ pageSize: 10 }}
-          />
+            <Button
+              icon={<SyncOutlined />}
+              onClick={fetchBatches}
+              className="bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            />
+          </Space>
+
+          <div className="overflow-x-auto">
+            <Table
+              dataSource={batchList}
+              columns={columns}
+              rowKey="batchId"
+              bordered
+              pagination={{ pageSize: 10 }}
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
+
       <BatchHistoryDrawer
-        open={open}
+        open={openDrawer}
         onClose={onClose}
         batchName={historyBatchName}
+      />
+
+      <CreateBatchModal open={openCreateModal} setOpen={setOpenCreateModal} />
+
+      <UpdateBatchModal
+        open={openUpdateModal}
+        setOpen={setOpenUpdateModal}
+        batchId={batchIdForUpdate}
       />
     </div>
   );

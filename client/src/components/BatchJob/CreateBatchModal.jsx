@@ -1,22 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { Modal } from "antd";
 import { useForm } from "react-hook-form";
 
-const NewBatchJob = () => {
+const CreateBatchModal = ({ open, setOpen }) => {
   const { register, handleSubmit, reset, setValue } = useForm();
-
-  const fetchBatchDetails = async (batchId) => {
-    try {
-      const res = await fetch(`http://127.0.0.1:8080/api/batch/${batchId}`);
-      const data = await res.json();
-      setValue("batchName", data.batchName);
-      setValue("batchId", data.batchId);
-      setValue("cronExpression", data.cronExpression);
-      setValue("status", data.status);
-      setValue("executionMethod", data.executionMethod);
-    } catch (err) {
-      console.error("Error fetching batch details:", err);
-    }
-  };
 
   const onSubmit = async (data) => {
     try {
@@ -29,6 +16,7 @@ const NewBatchJob = () => {
       const responseData = await res.json();
       alert(responseData.message);
       reset();
+      setOpen(false);
     } catch (err) {
       console.error("Error submitting batch job:", err);
       alert("An error occurred. Please try again.");
@@ -36,8 +24,22 @@ const NewBatchJob = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-violet-100 to-violet-300 p-4">
-      <div className="bg-white shadow-lg rounded-md w-full max-w-2xl p-10">
+    <Modal
+      centered
+      open={open}
+      onCancel={() => {setOpen(false); reset();}}
+      width={{
+        xs: "90%",
+        sm: "80%",
+        md: "70%",
+        lg: "60%",
+        xl: "50%",
+        xxl: "40%",
+      }}
+      className="bg-white max-w-2xl"
+      footer
+    >
+      <>
         <h1 className="mb-6 text-2xl font-bold text-violet-600 text-center">
           New Batch Job
         </h1>
@@ -47,12 +49,6 @@ const NewBatchJob = () => {
             <input
               {...register("batchName")}
               placeholder="Batch Name"
-              className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
-              required
-            />
-            <input
-              {...register("batchId")}
-              placeholder="Batch ID"
               className="w-full px-4 py-2 text-zinc-600 truncate border rounded-sm focus:ring-1 focus:ring-violet-500 focus:outline-none"
               required
             />
@@ -69,9 +65,8 @@ const NewBatchJob = () => {
               required
             >
               <option value="">Select Status</option>
-              <option value="active">Active</option>
-              <option value="onIce">On Ice</option>
-              <option value="disabled">Disabled</option>
+              <option value="ACTIVE">Active</option>
+              <option value="ON_ICE">On Ice</option>
             </select>
             <input
               {...register("executionMethod")}
@@ -87,9 +82,8 @@ const NewBatchJob = () => {
             </button>
           </form>
         </div>
-      </div>
-    </div>
+      </>
+    </Modal>
   );
 };
-
-export default NewBatchJob;
+export default CreateBatchModal;
